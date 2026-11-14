@@ -1,0 +1,192 @@
+
+docker --version
+sudo systemctl status docker
+sudo snap install microk8s --classic
+sudo usermod -a -G microk8s $USER
+mkdir -p ~/.kube
+newgrp microk8s
+microk8s status --wait-ready
+microk8s enable dns
+microk8s status
+
+cd ~
+mkdir -p devops8/python-image
+cd devops8/python-image
+
+nano app.py
+
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    return "Hello from Kubernetes!"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+
+Ctrl + O
+Enter
+Ctrl + X
+
+nano requirements.txt
+
+Flask
+
+Ctrl + O
+Enter
+Ctrl + X
+
+nano Dockerfile
+
+FROM python:3.11
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
+
+Ctrl + O
+Enter
+Ctrl + X
+
+ls
+sudo docker build -t mykubeapp .
+sudo docker images
+sudo docker run -d -p 5000:5000 mykubeapp
+sudo docker ps
+
+microk8s enable registry
+curl http://localhost:32000/v2/_catalog
+
+sudo docker tag mykubeapp localhost:32000/mykubeapp
+sudo docker push localhost:32000/mykubeapp
+curl http://localhost:32000/v2/_catalog
+
+nano deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mykubeapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mykubeapp
+  template:
+    metadata:
+      labels:
+        app: mykubeapp
+    spec:
+      containers:
+      - name: mykubeapp
+        image: localhost:32000/mykubeapp
+        ports:
+        - containerPort: 5000
+
+Ctrl + O
+Enter
+Ctrl + X
+
+nano service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mykubeapp-service
+spec:
+  selector:
+    app: mykubeapp
+  ports:
+  - port: 5000
+    targetPort: 5000
+  type: NodePort
+
+Ctrl + O
+Enter
+Ctrl + X
+
+microk8s kubectl apply -f deployment.yaml
+microk8s kubectl apply -f service.yaml
+
+microk8s kubectl get pods
+microk8s kubectl get service
+# Copy NodePort from PORT(S) column
+
+microk8s kubectl get nodes -o wide
+# Copy Node IP from INTERNAL-IP column
+
+# Final browser URL:
+# http://<Node-IP>:<NodePort>
+------------
+
+git --version
+
+mkdir git-week2-lab
+cd git-week2-lab
+
+git init
+
+git config --global user.name "VishnuVardhan Cheemalakonda"
+git config --global user.email "24P61A6732@vbithyd.ac.in"
+
+git status
+
+nano first.c
+
+git add first.c
+git status
+
+git commit -m "Initial commit"
+
+git log
+
+git branch basic
+
+git checkout basic
+
+nano second.c
+
+git add .
+
+git commit -m "Second commit"
+
+git checkout master
+
+git merge basic
+
+git log --oneline
+
+git checkout -- first.c
+
+git stash
+
+git stash list
+
+git stash pop
+
+git restore first.c
+
+git branch -d basic
+
+git remote add origin https://github.com/24p61a6732-maker/REPOSITORY.git
+
+git remote -v
+
+git push -u origin master
+
+git push -u origin basic
+
+git clone REPOSITORY_URL
+
+git pull origin master
+
